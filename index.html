@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Jadwal Salat · Kemenag RI (Akurat)</title>
+    <title>Jadwal Sholat· Kemenag RI (Akurat)</title>
     <style>
         /* CSS tetap sama dengan sebelumnya */
         * {
@@ -313,7 +313,7 @@
 <body>
     <div class="card" id="appCard">
         <div class="header">
-            <h2 id="cityNameDisplay">Waktu Salat di Kediri</h2>
+            <h2 id="cityNameDisplay">Waktu Sholat di Kediri</h2>
             <div class="subhead">
                 <span>Indonesia</span>
                 <span id="liveTimeLabel">—</span>
@@ -506,7 +506,7 @@
                     if (result.code !== 200) throw new Error('Data tidak ditemukan untuk kota ini');
                     
                     prayerDataCache = result.data;
-                    cityNameDisplay.innerText = `Waktu Salat di ${city}`;
+                    cityNameDisplay.innerText = `Waktu Sholat di ${city}`;
                     renderDisplay();
 
                     if (updateInterval) clearInterval(updateInterval);
@@ -543,4 +543,5 @@
         })();
     </script>
 </body>
+
 </html>
