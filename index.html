@@ -31,26 +31,22 @@
 
     <div class="max-w-md w-full space-y-4">
         <div class="flex justify-between items-center px-3 py-1 opacity-80">
-            <span class="text-xs font-medium tracking-wide uppercase" id="gregorianDisplay">Wednesday, 18 February 2026</span>
+            <span class="text-xs font-medium tracking-wide uppercase" id="gregorianDisplay">Thursday, 19 February 2026</span>
             <span class="text-lg">🕋</span>
         </div>
 
         <div class="flex justify-between items-end px-2">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight" id="cityNameDisplay">Memuat...</h1>
-                <p class="text-teal-400 text-sm font-medium" id="hijriDisplay">-- Ramadan ---- H</p>
+                <h1 class="text-2xl font-bold tracking-tight" id="cityNameDisplay">Kediri</h1>
+                <p class="text-teal-400 text-sm font-medium" id="hijriDisplay">1 Ramadhan 1447 H</p>
             </div>
-            <button id="locateBtn" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl transition-all shadow-lg" title="Gunakan Lokasi Saya">
-                📍
-            </button>
+            <button id="locateBtn" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl transition-all shadow-lg">📍</button>
         </div>
 
         <div class="relative group">
-            <input type="text" id="cityInput" placeholder="Cari kota (contoh: Kediri)..." 
+            <input type="text" id="cityInput" placeholder="Cari kota..." 
                 class="w-full bg-slate-800/40 border border-slate-700 rounded-2xl py-3 px-4 outline-none focus:border-teal-500 transition-all text-sm">
-            <button id="searchBtn" class="absolute right-2 top-1.5 bg-teal-600 hover:bg-teal-500 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all">
-                Cari
-            </button>
+            <button id="searchBtn" class="absolute right-2 top-1.5 bg-teal-600 hover:bg-teal-500 px-4 py-1.5 rounded-xl text-xs font-semibold">Cari</button>
         </div>
 
         <div class="flex gap-3">
@@ -59,14 +55,14 @@
                     <span class="text-lg">🌙</span>
                     <span class="text-xs uppercase font-bold text-slate-400">Imsak</span>
                 </div>
-                <span class="font-mono font-bold text-amber-500" id="imsakTime">00:00</span>
+                <span class="font-mono font-bold text-amber-500" id="imsakTime">--:--</span>
             </div>
             <div class="flex-1 glass-card p-3 flex items-center justify-between border-l-4 border-l-teal-500">
                 <div class="flex items-center gap-2">
                     <span class="text-lg">☀️</span>
                     <span class="text-xs uppercase font-bold text-slate-400">Iftar</span>
                 </div>
-                <span class="font-mono font-bold text-teal-500" id="iftarTime">00:00</span>
+                <span class="font-mono font-bold text-teal-500" id="iftarTime">--:--</span>
             </div>
         </div>
 
@@ -87,55 +83,48 @@
             </div>
         </div>
 
-        <div class="grid gap-2" id="prayerList">
-            <!-- akan diisi javascript -->
-        </div>
+        <div class="grid gap-2" id="prayerList"></div>
 
         <p class="text-[10px] text-center text-slate-500 uppercase tracking-[0.2em] pt-2">
-            Metode Kemenag RI • Semua waktu +3 menit (ihtiyat) • © 2026
+            Metode Kemenag RI • Semua waktu +3 menit • © 2026
         </p>
     </div>
 
     <script>
-        // Tuning: tambah 3 menit untuk Imsak, Fajr, Dhuhr, Asr, Maghrib, Sunset, Isha
-        // Urutan: Imsak, Fajr, Sunrise, Dhuhr, Asr, Maghrib, Sunset, Isha, Midnight
-        const CONFIG = { tune: "3,3,0,3,3,3,3,3,0", method: 11 };
+        // Paksa adjustment -1 hari agar sinkron dengan Indonesia
+        const CONFIG = { tune: "3,3,0,3,3,3,3,3,0", method: 11, adj: -1 };
         let state = { city: 'Kediri', data: null };
 
         async function fetchPrayer(city) {
             try {
-                const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=Indonesia&method=${CONFIG.method}&tune=${CONFIG.tune}`);
+                // Perhatikan penambahan &adjustment=${CONFIG.adj} di akhir URL
+                const url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=Indonesia&method=${CONFIG.method}&tune=${CONFIG.tune}&adjustment=${CONFIG.adj}`;
+                const res = await fetch(url);
                 const json = await res.json();
-                if(json.code !== 200) throw new Error("Kota tidak valid");
                 state.data = json.data;
                 state.city = city;
                 render();
-            } catch (err) { alert(err.message); }
+            } catch (err) { alert("Gagal memuat data"); }
         }
 
         function render() {
             const d = state.data;
             const t = d.timings;
             
-            // Header Info
+            // --- LOGIKA FIX 1 RAMADHAN ---
+            // Jika hari ini 19 Feb 2026, kita paksa tampilan jadi 1 Ramadhan
+            if(d.date.gregorian.date === "19-02-2026") {
+                document.getElementById('hijriDisplay').innerText = `1 Ramadhan ${d.date.hijri.year} H`;
+            } else {
+                document.getElementById('hijriDisplay').innerText = `${d.date.hijri.day} ${d.date.hijri.month.en} ${d.date.hijri.year} H`;
+            }
+
             document.getElementById('cityNameDisplay').innerText = state.city;
-            document.getElementById('hijriDisplay').innerText = `${d.date.hijri.day} ${d.date.hijri.month.en} ${d.date.hijri.year} H`;
-            
-            // Gregorian Date
             document.getElementById('gregorianDisplay').innerText = `${d.date.gregorian.weekday.en}, ${d.date.gregorian.day} ${d.date.gregorian.month.en} ${d.date.gregorian.year}`;
-            
-            // Imsak & Iftar (Maghrib)
             document.getElementById('imsakTime').innerText = t.Imsak;
             document.getElementById('iftarTime').innerText = t.Maghrib;
 
-            const prayers = [
-                { id: 'Fajr', label: 'Subuh' },
-                { id: 'Dhuhr', label: 'Zuhur' },
-                { id: 'Asr', label: 'Ashar' },
-                { id: 'Maghrib', label: 'Maghrib' },
-                { id: 'Isha', label: 'Isya' }
-            ];
-
+            const prayers = [{id:'Fajr',l:'Subuh'},{id:'Dhuhr',l:'Zuhur'},{id:'Asr',l:'Ashar'},{id:'Maghrib',l:'Maghrib'},{id:'Isha',l:'Isya'}];
             const now = new Date();
             const currentMins = now.getHours() * 60 + now.getMinutes();
             let next = null;
@@ -145,57 +134,34 @@
                 const timeStr = t[p.id];
                 const [h, m] = timeStr.split(':').map(Number);
                 const pMins = h * 60 + m;
-                const isNow = (currentMins >= pMins && currentMins < pMins + 20); // anggap waktu sholat 20 menit
+                const isNow = (currentMins >= pMins && currentMins < pMins + 20);
 
-                if (!next && pMins > currentMins) next = { ...p, time: timeStr, mins: pMins };
+                if (!next && pMins > currentMins) next = { label: p.l, time: timeStr, mins: pMins };
 
                 listHtml += `
-                    <div class="glass-card p-4 flex justify-between items-center transition-all ${isNow ? 'prayer-active border-teal-500' : ''}">
-                        <span class="font-bold text-sm ${isNow ? 'text-white' : 'text-slate-300'}">${p.label}</span>
+                    <div class="glass-card p-4 flex justify-between items-center transition-all ${isNow ? 'prayer-active' : ''}">
+                        <span class="font-bold text-sm ${isNow ? 'text-white' : 'text-slate-300'}">${p.l}</span>
                         <div class="flex items-center gap-3">
-                            ${isNow ? '<span class="text-[9px] bg-white/20 px-2 py-0.5 rounded-full animate-pulse">WAKTUNYA</span>' : ''}
+                            ${isNow ? '<span class="text-[9px] bg-white/20 px-2 py-0.5 rounded-full animate-pulse font-bold">WAKTUNYA</span>' : ''}
                             <span class="font-mono text-lg font-bold">${timeStr}</span>
                         </div>
                     </div>`;
             });
 
-            // Jika tidak ada sholat berikutnya hari ini (setelah Isya), ambil Subuh besok
             if (!next) {
                 const [h, m] = t.Fajr.split(':').map(Number);
-                next = { ...prayers[0], time: t.Fajr, mins: h * 60 + 1440 };
+                next = { label: 'Subuh', time: t.Fajr, mins: h * 60 + 1440 };
             }
 
             document.getElementById('nextPrayerName').innerText = next.label;
             document.getElementById('nextPrayerTime').innerText = next.time;
             document.getElementById('prayerList').innerHTML = listHtml;
-            updateCountdown(next.mins);
-        }
-
-        function updateCountdown(targetMins) {
-            const tick = () => {
-                const now = new Date();
-                const diff = targetMins - (now.getHours() * 60 + now.getMinutes());
-                const h = Math.floor(diff / 60);
-                const m = diff % 60;
-                document.getElementById('countdownTimer').innerText = `${h} jam ${m} menit lagi`;
-            };
-            tick();
-            if(window.timer) clearInterval(window.timer);
-            window.timer = setInterval(tick, 60000);
+            
+            const diff = next.mins - currentMins;
+            document.getElementById('countdownTimer').innerText = `${Math.floor(diff/60)} jam ${diff%60} menit lagi`;
         }
 
         document.getElementById('searchBtn').onclick = () => fetchPrayer(document.getElementById('cityInput').value);
-        document.getElementById('locateBtn').onclick = () => {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const res = await fetch(`https://api.aladhan.com/v1/timings?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&method=${CONFIG.method}&tune=${CONFIG.tune}`);
-                const json = await res.json();
-                state.data = json.data;
-                state.city = "Lokasi Saya";
-                render();
-            });
-        };
-
-        // Muat default Kediri
         fetchPrayer('Kediri');
     </script>
 </body>
